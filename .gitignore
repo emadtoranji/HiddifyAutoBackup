@@ -1,0 +1,12 @@
+# Ignore backup ZIP files
+*.zip
+
+# Ignore logs
+*.log
+
+# Ignore sensitive environment variables
+.env
+
+# Ignore system/IDE files
+.DS_Store
+*.swp
