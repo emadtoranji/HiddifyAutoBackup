@@ -87,9 +87,27 @@ RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDo
     -F caption="${CAPTION}" \
     -F disable_web_page_preview=true)
 
+# Regardless of success, remove the ZIP file
+rm -f "$ZIP_PATH"
+
+# Also remove the original JSON inside backup dir if it still exists
+rm -f "${HIDDIFY_BACKUP_DIR}/${FILENAME}"
+
+# Keep only 1 latest backup, remove others older than 3 days
+BACKUP_FILES=($(find "$HIDDIFY_BACKUP_DIR" -type f -mtime +3 -printf "%T@ %p\n" | sort -n | cut -d' ' -f2-))
+
+if [ ${#BACKUP_FILES[@]} -gt 0 ]; then
+    KEEP_FILE=$(find "$HIDDIFY_BACKUP_DIR" -type f -printf "%T@ %p\n" | sort -nr | head -n1 | cut -d' ' -f2-)
+    for FILE in "${BACKUP_FILES[@]}"; do
+        if [[ "$FILE" != "$KEEP_FILE" ]]; then
+            echo "[🧹] Removing old backup: $FILE"
+            rm -f "$FILE"
+        fi
+    done
+fi
+
 if [[ "$RESPONSE" == *"true"* ]]; then
     echo "[✅] Backup sent to Telegram successfully."
-    rm -f "$ZIP_PATH"
 else
     echo "❌ Failed to send file. Response: $RESPONSE"
 fi
