@@ -38,50 +38,45 @@ HOSTNAME=$(hostname)
 SERVER_IP=$(hostname -I | awk '{print $1}')
 FILE_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
 
-JSON_FILE_INSIDE_ZIP="${FILENAME}"
+# Extract JSON filename from zip (assumed json name is the original backup json file)
+# اگر اسم json داخل zip متغیره، اینجا اصلاح کن به اسم واقعی
+JSON_FILE_INSIDE_ZIP="$FILENAME"
 TMP_JSON="/tmp/backup_json_extracted_$$.json"
 
 unzip -p "$ZIP_PATH" "$JSON_FILE_INSIDE_ZIP" > "$TMP_JSON" 2>/dev/null || {
     echo "❌ Failed to extract JSON from zip for parsing user info"
     rm -f "$TMP_JSON"
+    echo "[⚠️] Skipping user info details in caption."
     ADMIN_INFO=""
-    TOTAL_ADMINS="?"
 }
 
 if [ -f "$TMP_JSON" ]; then
     ADMIN_INFO=""
-
-    ADMIN_UUIDS=$(jq -r '.admin_users[].uuid' "$TMP_JSON" 2>/dev/null || echo "")
-
-    if [ -z "$ADMIN_UUIDS" ]; then
-        ADMIN_INFO="Owner: ? Users (?)\n"
-        TOTAL_ADMINS="?"
-    else
-        for UUID in $ADMIN_UUIDS; do
-            NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
-            USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
-            USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
-            ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)\n"
-        done
-        TOTAL_ADMINS=$(jq '.admin_users | length' "$TMP_JSON" 2>/dev/null || echo "?")
-    fi
-
+    ADMIN_UUIDS=$(jq -r '.admin_users[].uuid' "$TMP_JSON")
+    for UUID in $ADMIN_UUIDS; do
+        NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
+        USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
+        USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
+        ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)<br>"
+    done
+    # تعداد کل ادمین ها
+    TOTAL_ADMINS=$(jq '.admin_users | length' "$TMP_JSON")
     rm -f "$TMP_JSON"
 else
-    ADMIN_INFO="Owner: ? Users (?)\n"
+    ADMIN_INFO="Owner: ? Users (?)<br>"
     TOTAL_ADMINS="?"
 fi
 
-CAPTION="🧠 <b>Hiddify Backup</b>
-📁 <b>File:</b> ${FILENAME}
-💾 <b>Size:</b> ${FILE_SIZE}
-🕒 <b>Date:</b> ${HUMAN_DATE}
-🖥️ <b>Host:</b> ${HOSTNAME}
-🌐 <b>IP:</b> <code>${SERVER_IP}</code>
+CAPTION="🧠 <b>Hiddify Backup</b><br>
+📁 <b>File:</b> ${FILENAME}<br>
+💾 <b>Size:</b> ${FILE_SIZE}<br>
+🕒 <b>Date:</b> ${HUMAN_DATE}<br>
+🖥️ <b>Host:</b> ${HOSTNAME}<br>
+🌐 <b>IP:</b> <code>${SERVER_IP}</code><br><br>
 
-👤 <b>Admin(s):</b> ${TOTAL_ADMINS}
-$ADMIN_INFO
-🔄 <i>Auto-uploaded via HiddifyAutoBackup</i> 🚀
+👤 <b>Admin(s):</b> ${TOTAL_ADMINS}<br>
+${ADMIN_INFO}
+🔄 <i>Auto-uploaded via HiddifyAutoBackup</i> 🚀<br><br>
 
 ⭐️ <b>Love automation?</b> Show some ❤️ by starring the <a href=\"https://github.com/emadtoranji/HiddifyAutoBackup\">repo</a>! Your star is your backup’s karma."
 
