@@ -38,8 +38,6 @@ HOSTNAME=$(hostname)
 SERVER_IP=$(hostname -I | awk '{print $1}')
 FILE_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
 
-# Extract JSON filename from zip (assumed json name is the original backup json file)
-# اگر اسم json داخل zip متغیره، اینجا اصلاح کن به اسم واقعی
 JSON_FILE_INSIDE_ZIP="$FILENAME"
 TMP_JSON="/tmp/backup_json_extracted_$$.json"
 
@@ -50,14 +48,21 @@ unzip -p "$ZIP_PATH" "$JSON_FILE_INSIDE_ZIP" > "$TMP_JSON" 2>/dev/null || {
     ADMIN_INFO=""
 }
 
-
-ADMIN_INFO=""
-for UUID in $ADMIN_UUIDS; do
-    NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
-    USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
-    USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
-    ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)&#10;"
-done
+if [ -f "$TMP_JSON" ]; then
+    ADMIN_INFO=""
+    ADMIN_UUIDS=$(jq -r '.admin_users[].uuid' "$TMP_JSON")
+    for UUID in $ADMIN_UUIDS; do
+        NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
+        USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
+        USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
+        ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)&#10;"
+    done
+    TOTAL_ADMINS=$(jq '.admin_users | length' "$TMP_JSON")
+    rm -f "$TMP_JSON"
+else
+    ADMIN_INFO="Owner: ? Users (?)&#10;"
+    TOTAL_ADMINS="?"
+fi
 
 CAPTION="🧠 <b>Hiddify Backup</b>&#10;
 📁 <b>File:</b> ${FILENAME}&#10;
