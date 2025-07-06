@@ -12,13 +12,11 @@ fi
 
 source "$CONFIG_FILE"
 
-# Run the backup script
 /opt/hiddify-manager/hiddify-panel/backup.sh || {
     echo "❌ Failed to run Hiddify backup script"
     exit 1
 }
 
-# Get the most recently created backup file
 LATEST_FILE=$(find "$HIDDIFY_BACKUP_DIR" -type f -printf "%T@ %p\n" | sort -nr | head -n1 | cut -d' ' -f2-)
 
 if [ -z "$LATEST_FILE" ]; then
@@ -27,37 +25,45 @@ if [ -z "$LATEST_FILE" ]; then
 fi
 
 TIMESTAMP=$(date +'%Y%m%d_%H%M%S')
+HUMAN_DATE=$(date "+%Y-%m-%d %H:%M:%S")
 FILENAME=$(basename "$LATEST_FILE")
 ZIP_PATH="${BACKUP_DIR}/hiddify_backup_${TIMESTAMP}.zip"
 
-# Create flat zip (no folders)
 cd "$(dirname "$LATEST_FILE")"
 zip -j "$ZIP_PATH" "$FILENAME"
 
 echo "[*] Created backup zip: $ZIP_PATH"
 
-# Gather info for caption
 HOSTNAME=$(hostname)
 SERVER_IP=$(hostname -I | awk '{print $1}')
 FILE_SIZE=$(du -h "$ZIP_PATH" | cut -f1)
 
-CAPTION="🧠 Hiddify Backup
-📁 File: ${FILENAME}
-💾 Size: ${FILE_SIZE}
-🕒 Date: ${TIMESTAMP}
-🖥️ Host: ${HOSTNAME}
-🌐 IP: ${SERVER_IP}
-🔁 Auto-uploaded via HiddifyAutoBackup"
+CAPTION="🧠 <b>Hiddify Backup</b>
+📁 <b>File:</b> <code>${FILENAME}</code>
+💾 <b>Size:</b> ${FILE_SIZE}
+🕒 <b>Date:</b> ${HUMAN_DATE}
+🖥️ <b>Host:</b> ${HOSTNAME}
+🌐 <b>IP:</b> ${SERVER_IP}
 
-# Upload to Telegram
-RESPONSE=$(curl -s -w "%{http_code}" -o /dev/null -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+🔄 <i>Auto-uploaded via</i> <a href=\"https://github.com/emadtoranji/HiddifyAutoBackup\">HiddifyAutoBackup</a> 🚀
+
+⭐️ <b>Love automation?</b> Show some ❤️ by starring the repo! Your star is your backup’s karma."
+
+RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
     -F chat_id="${TELEGRAM_CHAT_ID}" \
-    -F caption="${CAPTION}" \
-    -F document=@"${ZIP_PATH}")
+    -F document=@"${ZIP_PATH}" \
+    -F parse_mode="HTML" \
+    -F caption="${CAPTION}")
 
-if [ "$RESPONSE" == "200" ]; then
+if [[ "$RESPONSE" == *"true"* ]]; then
     echo "[✅] Backup sent to Telegram successfully."
     rm -f "$ZIP_PATH"
+
+    curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendMessage" \
+         -F chat_id="${TELEGRAM_CHAT_ID}" \
+         -F parse_mode="HTML" \
+         -F text="👤 Reminder: As admin, you're responsible for multiple users. 🧍‍♂️🧍‍♀️🧍‍♂️  
+Keep your backups tight, your configs clean, and your stars shining at <a href='https://github.com/emadtoranji/HiddifyAutoBackup'>this repo</a> 💫"
 else
-    echo "❌ Failed to send file. HTTP code: $RESPONSE"
+    echo "❌ Failed to send file. Response: $RESPONSE"
 fi
