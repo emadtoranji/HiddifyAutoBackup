@@ -32,6 +32,22 @@ bash /opt/HiddifyAutoBackup/backup_and_upload.sh
 
 ---
 
+## 💸 Donate
+
+This tool is 100% free and open-source, built with ❤️ for sysadmins and devs who love automation.
+
+If this saved your time or prevented disaster, feel free to buy me a ☕️ or send some crypto 🚀
+
+**Wallets:**
+
+- TON: `UQC85EfTOzO3Kn868mQdes5E5pnkRRBy_9DyFUyjwTazq3wT`
+
+- TRC-20: `TSyrrScMorisqSVwBo9igtiqVfvTkSrtLc`
+
+- BEP-20: `0xB3525f7872477dD6B004F8E2cd6413CDf3306dAd`
+
+---
+
 ## 🧹 Uninstall
 
 To fully remove HiddifyAutoBackup from your system:
