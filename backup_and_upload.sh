@@ -55,25 +55,27 @@ if [ -f "$TMP_JSON" ]; then
         NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
         USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
         USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
-        ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)&#10;"
+        ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)
+        "
     done
     TOTAL_ADMINS=$(jq '.admin_users | length' "$TMP_JSON")
     rm -f "$TMP_JSON"
 else
-    ADMIN_INFO="Owner: ? Users (?)&#10;"
+    ADMIN_INFO="Owner: ? Users (?)
+    "
     TOTAL_ADMINS="?"
 fi
 
-CAPTION="🧠 <b>Hiddify Backup</b>&#10;
-📁 <b>File:</b> ${FILENAME}&#10;
-💾 <b>Size:</b> ${FILE_SIZE}&#10;
-🕒 <b>Date:</b> ${HUMAN_DATE}&#10;
-🖥️ <b>Host:</b> ${HOSTNAME}&#10;
-🌐 <b>IP:</b> <code>${SERVER_IP}</code>&#10;&#10;
+CAPTION="🧠 <b>Hiddify Backup</b>
+📁 <b>File:</b> ${FILENAME}
+💾 <b>Size:</b> ${FILE_SIZE}
+🕒 <b>Date:</b> ${HUMAN_DATE}
+🖥️ <b>Host:</b> ${HOSTNAME}
+🌐 <b>IP:</b> <code>${SERVER_IP}</code>
 
-👤 <b>Admin(s):</b> ${TOTAL_ADMINS}&#10;
+👤 <b>Admin(s):</b> ${TOTAL_ADMINS}
 ${ADMIN_INFO}
-🔄 <i>Auto-uploaded via HiddifyAutoBackup</i> 🚀&#10;&#10;
+🔄 <i>Auto-uploaded via HiddifyAutoBackup</i> 🚀
 
 ⭐️ <b>Love automation?</b> Show some ❤️ by starring the <a href=\"https://github.com/emadtoranji/HiddifyAutoBackup\">repo</a>! Your star is your backup’s karma."
 
