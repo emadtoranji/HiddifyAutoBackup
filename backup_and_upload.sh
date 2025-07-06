@@ -2,7 +2,7 @@
 set -e
 
 BACKUP_DIR="/opt/HiddifyAutoBackup"
-HIDDIFY_DIR="/opt/hiddify-manager/hiddify-panel"
+HIDDIFY_DIR="/opt/hiddify-manager/hiddify-panel/backup"
 CONFIG_FILE="$BACKUP_DIR/.env"
 
 if [ ! -f "$CONFIG_FILE" ]; then
