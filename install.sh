@@ -4,15 +4,26 @@ set -e
 REPO_URL="https://github.com/emadtoranji/HiddifyAutoBackup.git"
 INSTALL_DIR="/opt/HiddifyAutoBackup"
 CONFIG_FILE="$INSTALL_DIR/.env"
+TEMP_ENV="/tmp/hiddifyautobackup_env.tmp"
 SYMLINK="/usr/local/bin/hiddify-backup"
 
 echo "[*] Installing dependencies..."
 apt-get update && apt-get install -y git python3 zip curl
 
+# Backup .env if it exists
+if [[ -f "$CONFIG_FILE" ]]; then
+    cp "$CONFIG_FILE" "$TEMP_ENV"
+fi
+
 echo "[*] Cloning the repo..."
 rm -rf "$INSTALL_DIR"
 git clone "$REPO_URL" "$INSTALL_DIR"
 chmod +x "$INSTALL_DIR"/*.sh
+
+# Restore .env if available
+if [[ -f "$TEMP_ENV" ]]; then
+    mv "$TEMP_ENV" "$CONFIG_FILE"
+fi
 
 TELEGRAM_TOKEN=""
 TELEGRAM_CHAT_ID=""
@@ -38,7 +49,7 @@ else
     read -p "Enter your Telegram Chat ID (@username or numeric ID): " TELEGRAM_CHAT_ID
 fi
 
-# Save .env file again (overwrites or creates fresh)
+# Save updated or fresh config
 echo "TELEGRAM_TOKEN=\"$TELEGRAM_TOKEN\"" > "$CONFIG_FILE"
 echo "TELEGRAM_CHAT_ID=\"$TELEGRAM_CHAT_ID\"" >> "$CONFIG_FILE"
 
