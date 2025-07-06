@@ -27,8 +27,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/emadtoranji/HiddifyAutoBackup
 Navigate into the installation folder and run the backup script manually:
 
 ```bash
-cd /opt/HiddifyAutoBackup
-bash backup_and_upload.sh
+bash /opt/HiddifyAutoBackup/backup_and_upload.sh
 ```
 
 ---
