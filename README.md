@@ -1,14 +1,15 @@
 # HiddifyAutoBackup
 
-📦 Auto backup your Hiddify panel (`/etc/hiddify`) every 5 minutes and send it to your Telegram via bot.
+📦 Auto backup your Hiddify-Manager every 5 minutes and send it to your Telegram Bot.
 
 ---
 
 ## ⚙️ Features
 
-- Automatic zip backup of `/etc/hiddify`
+- Automatic zip backup of Hiddify-Manager
 - Sends `.zip` file to Telegram
 - Deletes backup file after successful upload
+- Cleanup backups older than 3 days
 - Cron runs every 5 minutes
 - One-line install
 
@@ -24,10 +25,10 @@ bash <(curl -sSL https://raw.githubusercontent.com/emadtoranji/HiddifyAutoBackup
 
 ## 📍 Manually Usage
 
-Navigate into the installation folder and run the backup script manually:
+run the backup script manually:
 
 ```bash
-bash /opt/HiddifyAutoBackup/backup_and_upload.sh
+hiddify-backup
 ```
 
 ---
