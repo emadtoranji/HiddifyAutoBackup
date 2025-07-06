@@ -61,14 +61,14 @@ if [ -f "$TMP_JSON" ]; then
             NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
             USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
             USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
-            ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)</b>"
+            ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)\n"
         done
         TOTAL_ADMINS=$(jq '.admin_users | length' "$TMP_JSON" 2>/dev/null || echo "?")
     fi
 
     rm -f "$TMP_JSON"
 else
-    ADMIN_INFO="Owner: ? Users (?)</b>"
+    ADMIN_INFO="Owner: ? Users (?)\n"
     TOTAL_ADMINS="?"
 fi
 
