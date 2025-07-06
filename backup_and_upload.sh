@@ -50,33 +50,25 @@ unzip -p "$ZIP_PATH" "$JSON_FILE_INSIDE_ZIP" > "$TMP_JSON" 2>/dev/null || {
     ADMIN_INFO=""
 }
 
-if [ -f "$TMP_JSON" ]; then
-    ADMIN_INFO=""
-    ADMIN_UUIDS=$(jq -r '.admin_users[].uuid' "$TMP_JSON")
-    for UUID in $ADMIN_UUIDS; do
-        NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
-        USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
-        USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
-        ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)<br>"
-    done
-    # تعداد کل ادمین ها
-    TOTAL_ADMINS=$(jq '.admin_users | length' "$TMP_JSON")
-    rm -f "$TMP_JSON"
-else
-    ADMIN_INFO="Owner: ? Users (?)<br>"
-    TOTAL_ADMINS="?"
-fi
 
-CAPTION="🧠 <b>Hiddify Backup</b><br>
-📁 <b>File:</b> ${FILENAME}<br>
-💾 <b>Size:</b> ${FILE_SIZE}<br>
-🕒 <b>Date:</b> ${HUMAN_DATE}<br>
-🖥️ <b>Host:</b> ${HOSTNAME}<br>
-🌐 <b>IP:</b> <code>${SERVER_IP}</code><br><br>
+ADMIN_INFO=""
+for UUID in $ADMIN_UUIDS; do
+    NAME=$(jq -r --arg uuid "$UUID" '.admin_users[] | select(.uuid == $uuid) | .name' "$TMP_JSON")
+    USER_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid)] | length' "$TMP_JSON")
+    USER_ENABLED_COUNT=$(jq --arg uuid "$UUID" '[.users[] | select(.added_by_uuid==$uuid and .enable==true)] | length' "$TMP_JSON")
+    ADMIN_INFO+="${NAME}: ${USER_COUNT} Users (${USER_ENABLED_COUNT} Enabled)&#10;"
+done
 
-👤 <b>Admin(s):</b> ${TOTAL_ADMINS}<br>
+CAPTION="🧠 <b>Hiddify Backup</b>&#10;
+📁 <b>File:</b> ${FILENAME}&#10;
+💾 <b>Size:</b> ${FILE_SIZE}&#10;
+🕒 <b>Date:</b> ${HUMAN_DATE}&#10;
+🖥️ <b>Host:</b> ${HOSTNAME}&#10;
+🌐 <b>IP:</b> <code>${SERVER_IP}</code>&#10;&#10;
+
+👤 <b>Admin(s):</b> ${TOTAL_ADMINS}&#10;
 ${ADMIN_INFO}
-🔄 <i>Auto-uploaded via HiddifyAutoBackup</i> 🚀<br><br>
+🔄 <i>Auto-uploaded via HiddifyAutoBackup</i> 🚀&#10;&#10;
 
 ⭐️ <b>Love automation?</b> Show some ❤️ by starring the <a href=\"https://github.com/emadtoranji/HiddifyAutoBackup\">repo</a>! Your star is your backup’s karma."
 
