@@ -1,15 +1,29 @@
 #!/usr/bin/env bash
 set -e
 
-# Automatically get latest release tag from GitHub
-LATEST_TAG=$(curl -s https://api.github.com/repos/emadtoranji/HiddifyAutoBackup/releases/latest | grep '"tag_name":' | cut -d '"' -f4)
+REPO="emadtoranji/HiddifyAutoBackup"
+INSTALL_DIR="/opt/HiddifyAutoBackup"
+
+LATEST_TAG=$(curl -s https://api.github.com/repos/$REPO/releases/latest | grep '"tag_name":' | cut -d '"' -f4)
 
 if [[ -z "$LATEST_TAG" ]]; then
-    echo "❌ Failed to fetch latest release tag. Falling back to main branch."
-    bash <(curl -sSL "https://raw.githubusercontent.com/emadtoranji/HiddifyAutoBackup/main/install_release.sh")
-    exit 0
+    echo "❌ Failed to get latest release tag"
+    exit 1
 fi
 
-echo "📦 Installing HiddifyAutoBackup version: $LATEST_TAG..."
+echo "📦 Installing HiddifyAutoBackup version: $LATEST_TAG"
 
-bash <(curl -sSL "https://raw.githubusercontent.com/emadtoranji/HiddifyAutoBackup/${LATEST_TAG}/install_release.sh")
+mkdir -p "$INSTALL_DIR"
+cd "$INSTALL_DIR"
+rm -rf ./*
+
+echo "[*] Downloading release ZIP..."
+curl -sL "https://github.com/$REPO/archive/refs/tags/${LATEST_TAG}.zip" -o release.zip
+
+echo "[*] Extracting release..."
+unzip -qo release.zip
+cp -r "$INSTALL_DIR/HiddifyAutoBackup-${LATEST_TAG#v}/." "$INSTALL_DIR/"
+rm -rf "$INSTALL_DIR/HiddifyAutoBackup-${LATEST_TAG#v}" release.zip
+
+chmod +x "$INSTALL_DIR/install_release.sh"
+"$INSTALL_DIR/install_release.sh"
