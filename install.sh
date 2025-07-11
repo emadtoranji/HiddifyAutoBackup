@@ -112,7 +112,7 @@ ln -sf "$INSTALL_DIR/backup_and_upload.sh" "$SYMLINK"
 
 echo "[*] Adding root cron job for: $INTERVAL"
 /usr/bin/crontab -u root -l 2>/dev/null | grep -v "$SYMLINK" > /tmp/cron_bak.txt || true
-echo "$INTERVAL root $SYMLINK >> /var/log/hiddify_backup.log 2>&1" >> /tmp/cron_bak.txt
+echo "$INTERVAL sudo $SYMLINK >> /var/log/hiddify_backup.log 2>&1" >> /tmp/cron_bak.txt
 cat /tmp/cron_bak.txt | crontab -u root -
 
 echo "✅ Installation complete!"
