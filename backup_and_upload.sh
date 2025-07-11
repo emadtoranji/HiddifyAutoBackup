@@ -44,7 +44,6 @@ TMP_JSON="/tmp/backup_json_extracted_$$.json"
 unzip -p "$ZIP_PATH" "$JSON_FILE_INSIDE_ZIP" > "$TMP_JSON" 2>/dev/null || {
     echo "❌ Failed to extract JSON from zip for parsing user info"
     rm -f "$TMP_JSON"
-    echo "[⚠️] Skipping user info details in caption."
     ADMIN_INFO=""
 }
 
@@ -61,8 +60,7 @@ if [ -f "$TMP_JSON" ]; then
     TOTAL_ADMINS=$(jq '.admin_users | length' "$TMP_JSON")
     rm -f "$TMP_JSON"
 else
-    ADMIN_INFO="Owner: ? Users (?)
-"
+    ADMIN_INFO="Owner: ? Users (?)"
     TOTAL_ADMINS="?"
 fi
 
@@ -80,34 +78,49 @@ ${ADMIN_INFO}
 ⭐️ <b>Love automation?</b> Show some ❤️ by starring the <a href=\"https://github.com/emadtoranji/HiddifyAutoBackup\">repo</a>!
 Your star is your backup’s karma."
 
-RESPONSE=$(curl -s -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
+RESPONSE=$(curl -s --max-time 20 -X POST "https://api.telegram.org/bot${TELEGRAM_TOKEN}/sendDocument" \
     -F chat_id="${TELEGRAM_CHAT_ID}" \
     -F document=@"${ZIP_PATH}" \
     -F parse_mode="HTML" \
     -F caption="${CAPTION}" \
     -F disable_web_page_preview=true)
 
-# Regardless of success, remove the ZIP file
-rm -f "$ZIP_PATH"
-
-# Also remove the original JSON inside backup dir if it still exists
-rm -f "${HIDDIFY_BACKUP_DIR}/${FILENAME}"
-
-# Keep only 1 latest backup, remove others older than 3 days
-BACKUP_FILES=($(find "$HIDDIFY_BACKUP_DIR" -type f -mtime +3 -printf "%T@ %p\n" | sort -n | cut -d' ' -f2-))
-
-if [ ${#BACKUP_FILES[@]} -gt 0 ]; then
-    KEEP_FILE=$(find "$HIDDIFY_BACKUP_DIR" -type f -printf "%T@ %p\n" | sort -nr | head -n1 | cut -d' ' -f2-)
-    for FILE in "${BACKUP_FILES[@]}"; do
-        if [[ "$FILE" != "$KEEP_FILE" ]]; then
-            echo "[🧹] Removing old backup: $FILE"
-            rm -f "$FILE"
-        fi
-    done
-fi
-
 if [[ "$RESPONSE" == *"true"* ]]; then
     echo "[✅] Backup sent to Telegram successfully."
 else
     echo "❌ Failed to send file. Response: $RESPONSE"
+fi
+
+# Remove ZIP no matter what
+{
+    rm -f "$ZIP_PATH"
+} || {
+    echo "⚠️ Failed to remove backup zip: $ZIP_PATH (Check permissions)"
+}
+
+# Only run cleanup if current minute == 30
+CURRENT_MINUTE=$(date +"%M")
+if [ "$CURRENT_MINUTE" == "30" ]; then
+    echo "[🕒] Minute is 30 — starting cleanup..."
+    BACKUP_FILES=($(find "$HIDDIFY_BACKUP_DIR" -type f -mtime +3 -printf "%T@ %p\n" | sort -n | cut -d' ' -f2-))
+    if [ ${#BACKUP_FILES[@]} -gt 0 ]; then
+        KEEP_FILE=$(find "$HIDDIFY_BACKUP_DIR" -type f -printf "%T@ %p\n" | sort -nr | head -n1 | cut -d' ' -f2-)
+        REMOVED_COUNT=0
+        for FILE in "${BACKUP_FILES[@]}"; do
+            if [[ "$FILE" != "$KEEP_FILE" ]]; then
+                {
+                    rm -f "$FILE"
+                    echo "[🧹] Removed old backup: $FILE"
+                    ((REMOVED_COUNT++))
+                } || {
+                    echo "⚠️ Failed to delete file: $FILE"
+                }
+            fi
+        done
+        echo "[🧮] Cleanup complete. Total removed: $REMOVED_COUNT"
+    else
+        echo "[ℹ️] No old backups to remove."
+    fi
+else
+    echo "[⏩] Skipping file cleanup. Minute ($CURRENT_MINUTE) ≠ 30"
 fi
