@@ -44,57 +44,38 @@ else
     EDIT_CONFIG="true"
 fi
 
-# Validate Telegram token using getMe
 function validate_token() {
     local token="$1"
     local result
     result=$(curl -s --max-time 10 "https://api.telegram.org/bot${token}/getMe")
-    if [[ "$result" == *'"ok":true'* ]]; then
-        return 0
-    else
-        echo "❌ Invalid Telegram Token. Make sure you copy it correctly from @BotFather."
-        return 1
-    fi
+    [[ "$result" == *'"ok":true'* ]]
 }
 
-# Validate Chat ID (number or @username)
 function validate_chat_id() {
     local chat_id="$1"
     local token="$2"
-    local check_id="$chat_id"
-
-    if [[ "$chat_id" =~ ^[0-9-]+$ ]]; then
-        check_id="$chat_id"
-    elif [[ "$chat_id" =~ ^@?[a-zA-Z0-9_]+$ ]]; then
-        [[ "$chat_id" =~ ^@ ]] || check_id="@$chat_id"
-    else
-        echo "❌ Invalid Chat ID format. Use @username or numeric ID (e.g. @telegram or 123456789)."
-        return 1
-    fi
-
     local result
-    result=$(curl -s --max-time 10 "https://api.telegram.org/bot${token}/getChat?chat_id=${check_id}")
-    if [[ "$result" == *'"ok":true'* ]]; then
-        TELEGRAM_CHAT_ID="$check_id"
-        return 0
+    if [[ "$chat_id" =~ ^@ ]]; then
+        result=$(curl -s --max-time 10 "https://api.telegram.org/bot${token}/getChat?chat_id=${chat_id}")
     else
-        echo "❌ Chat ID validation failed. Make sure the bot has access to this chat."
-        return 1
+        result=$(curl -s --max-time 10 "https://api.telegram.org/bot${token}/getChat?chat_id=${chat_id}")
     fi
+    [[ "$result" == *'"ok":true'* ]]
 }
 
-# Edit config if needed
 if [[ "$EDIT_CONFIG" == "true" ]]; then
     while true; do
         read -p "Enter your Telegram Bot Token: " TELEGRAM_TOKEN
         if [[ -n "$TELEGRAM_TOKEN" && ! "$TELEGRAM_TOKEN" =~ [[:space:]] ]]; then
-            validate_token "$TELEGRAM_TOKEN" && break
+            if validate_token "$TELEGRAM_TOKEN"; then break; fi
         fi
+        echo "❌ Invalid token. Try again."
     done
 
     while true; do
         read -p "Enter your Telegram Chat ID (@username or numeric ID): " TELEGRAM_CHAT_ID
-        validate_chat_id "$TELEGRAM_CHAT_ID" "$TELEGRAM_TOKEN" && break
+        if validate_chat_id "$TELEGRAM_CHAT_ID" "$TELEGRAM_TOKEN"; then break; fi
+        echo "❌ Invalid chat ID. Try again."
     done
 
     echo "TELEGRAM_TOKEN=\"$TELEGRAM_TOKEN\"" > "$CONFIG_FILE"
@@ -102,25 +83,29 @@ if [[ "$EDIT_CONFIG" == "true" ]]; then
     echo "✅ Saved config to $CONFIG_FILE"
 fi
 
-# Ask for cron interval
+# Select cron interval
 echo "[*] Set backup interval in minutes:"
 echo "   1) Every 1 minute"
-echo "   2) Every 5 minutes"
-echo "   3) Every 15 minutes"
-echo "   4) Every 20 minutes"
-echo "   5) Every 30 minutes"
-echo "   6) Every 60 minutes"
-read -p "Choose [1-6]: " CHOICE
+echo "   2) Every 2 minutes"
+echo "   3) Every 5 minutes"
+echo "   4) Every 15 minutes"
+echo "   5) Every 20 minutes"
+echo "   6) Every 30 minutes"
+echo "   7) Every 60 minutes"
 
-case "$CHOICE" in
-    1) INTERVAL="* * * * *" ;;
-    2) INTERVAL="*/5 * * * *" ;;
-    3) INTERVAL="*/15 * * * *" ;;
-    4) INTERVAL="*/20 * * * *" ;;
-    5) INTERVAL="30 * * * *" ;;
-    6) INTERVAL="0 * * * *" ;;
-    *) echo "❌ Invalid choice. Exiting."; exit 1 ;;
-esac
+while true; do
+    read -p "Choose [1-7]: " CHOICE
+    case "$CHOICE" in
+        1) INTERVAL="* * * * *"; break ;;
+        2) INTERVAL="*/2 * * * *"; break ;;
+        3) INTERVAL="*/5 * * * *"; break ;;
+        4) INTERVAL="*/15 * * * *"; break ;;
+        5) INTERVAL="*/20 * * * *"; break ;;
+        6) INTERVAL="30 * * * *"; break ;;
+        7) INTERVAL="0 * * * *"; break ;;
+        *) echo "❌ Invalid choice. Please enter a number between 1 and 7." ;;
+    esac
+done
 
 echo "[*] Creating command symlink..."
 ln -sf "$INSTALL_DIR/backup_and_upload.sh" "$SYMLINK"
