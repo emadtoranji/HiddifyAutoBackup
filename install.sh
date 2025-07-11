@@ -108,7 +108,7 @@ while true; do
 done
 
 echo "[*] Creating command symlink..."
-ln -sf "$INSTALL_DIR/backup_and_upload.sh" "$SYMLINK"
+ln -sf "$INSTALL_DIR/run.sh" "$SYMLINK"
 
 echo "[*] Adding root cron job for: $INTERVAL"
 /usr/bin/crontab -u root -l 2>/dev/null | grep -v "$SYMLINK" > /tmp/cron_bak.txt || true
