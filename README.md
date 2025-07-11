@@ -6,11 +6,13 @@
 
 ## ⚙️ Features
 
-- Automatic zip backup of Hiddify-Manager
-- Sends `.zip` file to Telegram
-- Deletes backup file after successful upload
-- Cleanup backups older than 3 days
-- Cron runs every 5 minutes
+- Automatically compresses your latest Hiddify backup JSON into a .zip file using timestamped naming.
+- Sends the backup file to your specified Telegram chat using a verified bot.
+- Deletes the backup file after it's successfully uploaded — keeping your server clean.
+- Choose from multiple time intervals (1m, 2m, 5m, 15m, 30m, hourly...)
+- Every hour, it checks the backup folder and deletes backup files older than 3 days — only the latest is kept.
+- Validates your Telegram token and chat ID during setup to avoid misconfiguration.
+- Run the installer again to update your Telegram bot/token or change schedule.
 - One-line install
 
 ---
@@ -28,7 +30,7 @@ bash <(curl -sSL https://raw.githubusercontent.com/emadtoranji/HiddifyAutoBackup
 run the backup script manually:
 
 ```bash
-hiddify-backup
+sudo hiddify-backup
 ```
 
 ---
