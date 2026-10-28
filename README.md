@@ -5,26 +5,26 @@
 ---
 
 ## ⚙️ Features
-- 🗂️ Smart Backup Packaging  
-  Automatically compresses the latest Hiddify backup (.json) into a timestamped (.zip) file.
-- 📤 Telegram Integration  
-  Securely sends the backup to your specified Telegram chat via a verified bot.
-- 🧹 Cleanup After Upload  
-  Deletes the (.zip) after a successful upload to keep your server clutter-free.
-- 🕒 Flexible Scheduling Options  
-  Choose from common intervals like 1m, 2m, 5m, 15m, 30m, hourly — tailored to your backup needs.
-- 🗑️ Automatic Expiry Cleanup  
-  Checks hourly and deletes backups older than 3 days — only the latest one is kept for safety.
-- ✅ Setup Validation  
-  Verifies your Telegram bot token and chat ID during setup to prevent errors.
-- 🔁 Reconfigurable Installer  
-  Rerun the installer anytime to update bot settings or tweak your backup schedule.
-- 🧵 One-Line Installation  
-  No fuss. Just one command to kick things off.
+- 🗂️ **Smart Backup Packaging**  
+  Compresses the latest Hiddify backup (`.json`) into a timestamped `.zip` file directly from source without unnecessary temporary extractions.
+- 📬 **Flexible Telegram Destinations**  
+  Send backups to your **Private Chat (DM)**, a **Telegram Group/Channel**, or a **Specific Topic (Forum Thread)** inside a Supergroup!
+- ⚡ **High Performance & Smart Deduplication**  
+  Single-pass `jq` parsing and automatic deduplication (`.last_sent`) — frequent cron runs skip redundant uploads instantly.
+- 🔒 **Hardened Security**  
+  Telegram bot tokens are masked from command-line arguments (`ps aux`) and temporary files use restricted `0600` permissions (`mktemp`).
+- 🧪 **Live Connection Testing**  
+  The interactive installer sends a test message to verify Telegram permissions before saving your configuration, complete with back-navigation.
+- 🧹 **Automatic Expiry Cleanup**  
+  Runs hourly at minute `:30` and purges backups older than 3 days, always keeping the latest one safe.
+- 🔁 **Reconfigurable Wizard**  
+  Rerun the installer anytime to update destinations, edit schedules, or tweak settings with full step-by-step back-navigation.
 
 ---
 
 ## 🚀 Installation
+
+Run this one-liner on your Hiddify server as root:
 
 ```bash
 bash <(curl -sSL https://raw.githubusercontent.com/emadtoranji/HiddifyAutoBackup/main/install.sh)
@@ -32,12 +32,28 @@ bash <(curl -sSL https://raw.githubusercontent.com/emadtoranji/HiddifyAutoBackup
 
 ---
 
-## 📍 Manually Usage
+## 📍 Manual Usage
 
-run the backup script manually:
+Run the backup script manually anytime:
 
 ```bash
 sudo hiddify-backup
+```
+
+To view automated backup logs:
+
+```bash
+tail -f /var/log/hiddify_backup.log
+```
+
+---
+
+## 🧪 Testing
+
+To run the automated test suite locally:
+
+```bash
+bash tests/test_logic.sh
 ```
 
 ---
@@ -51,9 +67,7 @@ If this saved your time or prevented disaster, feel free to buy me a ☕️ or s
 **Wallets:**
 
 - TON: `UQC85EfTOzO3Kn868mQdes5E5pnkRRBy_9DyFUyjwTazq3wT`
-
 - TRC-20: `TSyrrScMorisqSVwBo9igtiqVfvTkSrtLc`
-
 - BEP-20: `0xB3525f7872477dD6B004F8E2cd6413CDf3306dAd`
 
 ---

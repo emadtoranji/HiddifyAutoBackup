@@ -2,7 +2,7 @@
 # ─────────────────────────────────────────────────────────────────────────
 #  HiddifyAutoBackup — Unit Tests (Pure Logic, CI-compatible)
 #  Does NOT require a real Hiddify server or Telegram connection.
-#  Runs on any standard Linux/macOS with bash + jq installed.
+#  Runs on any standard Linux/macOS/Git-Bash with bash + jq installed.
 # ─────────────────────────────────────────────────────────────────────────
 
 set -euo pipefail
@@ -28,14 +28,6 @@ assert_eq() {
     fi
 }
 
-assert_exit() {
-    local desc="$1" expected_code="$2"
-    shift 2
-    local actual
-    "$@" 2>/dev/null; actual=$? || actual=$?
-    assert_eq "$desc (exit code)" "$actual" "$expected_code"
-}
-
 section() { echo ""; echo "▶ $*"; }
 
 # ── 1. Syntax validation ──────────────────────────────────────────────────
@@ -52,60 +44,52 @@ section "jq: admin info filter (single call)"
 
 SAMPLE_JSON='{"admin_users":[{"uuid":"1","name":"Root"},{"uuid":"2","name":"Agent"}],"users":[{"added_by_uuid":"1","enable":true},{"added_by_uuid":"1","enable":false},{"added_by_uuid":"2","enable":true}]}'
 
-_JQ=$(echo "$SAMPLE_JSON" | jq -r '
+ADMIN_INFO=$(echo "$SAMPLE_JSON" | jq -r '
   (.users // []) as $u |
-  (.admin_users // []) as $a |
-  [
-    ($a | length | tostring),
-    ($u | length | tostring),
-    ($u | map(select(.enable == true)) | length | tostring),
-    ([$a[] | .uuid as $id | .name as $name |
-      ($u | map(select(.added_by_uuid == $id))) as $mu |
-      "• \($name): \($mu|length) Users (\($mu|map(select(.enable==true))|length) Enabled)"
-    ] | join("\n"))
-  ] | @tsv
+  (.admin_users // [])[] |
+  .uuid as $id | .name as $name |
+  ($u | map(select(.added_by_uuid == $id))) as $mu |
+  "\($name): \($mu | length) Users (\($mu | map(select(.enable == true)) | length) Enabled)"
 ')
-IFS=$'\t' read -r ADMIN_COUNT TOTAL_USERS ACTIVE_USERS ADMIN_LINES <<< "$_JQ"
 
-assert_eq "admin count"    "$ADMIN_COUNT"  "2"
-assert_eq "total users"    "$TOTAL_USERS"  "3"
-assert_eq "active users"   "$ACTIVE_USERS" "2"
-assert_eq "admin line 1"   "$(echo "$ADMIN_LINES" | head -n1)" "• Root: 2 Users (1 Enabled)"
-assert_eq "admin line 2"   "$(echo "$ADMIN_LINES" | tail -n1)" "• Agent: 1 Users (1 Enabled)"
+assert_eq "admin line 1" "$(echo "$ADMIN_INFO" | head -n1)" "Root: 2 Users (1 Enabled)"
+assert_eq "admin line 2" "$(echo "$ADMIN_INFO" | tail -n1)" "Agent: 1 Users (1 Enabled)"
 
 section "jq: edge cases"
 
 # Empty users array
 EMPTY_USERS='{"admin_users":[{"uuid":"1","name":"Solo"}],"users":[]}'
-_JQ2=$(echo "$EMPTY_USERS" | jq -r '
-  (.users // []) as $u | (.admin_users // []) as $a |
-  [($a|length|tostring),($u|length|tostring),($u|map(select(.enable==true))|length|tostring),
-   ([$a[]|.uuid as $id|.name as $n|($u|map(select(.added_by_uuid==$id))) as $m|
-     "• \($n): \($m|length) Users (\($m|map(select(.enable==true))|length) Enabled)"]|join("\n"))
-  ] | @tsv
+ADMIN_INFO_EMPTY=$(echo "$EMPTY_USERS" | jq -r '
+  (.users // []) as $u |
+  (.admin_users // [])[] |
+  .uuid as $id | .name as $name |
+  ($u | map(select(.added_by_uuid == $id))) as $mu |
+  "\($name): \($mu | length) Users (\($mu | map(select(.enable == true)) | length) Enabled)"
 ')
-IFS=$'\t' read -r AC TU AU AL <<< "$_JQ2"
-assert_eq "empty users: admin count" "$AC" "1"
-assert_eq "empty users: total users" "$TU" "0"
-assert_eq "empty users: active"      "$AU" "0"
+assert_eq "empty users: admin line" "$ADMIN_INFO_EMPTY" "Solo: 0 Users (0 Enabled)"
 
 # Null users field
 NULL_USERS='{"admin_users":[{"uuid":"1","name":"Solo"}],"users":null}'
-_JQ3=$(echo "$NULL_USERS" | jq -r '
-  (.users // []) as $u | (.admin_users // []) as $a |
-  [($a|length|tostring),($u|length|tostring),($u|map(select(.enable==true))|length|tostring),"ok"] | @tsv
+ADMIN_INFO_NULL=$(echo "$NULL_USERS" | jq -r '
+  (.users // []) as $u |
+  (.admin_users // [])[] |
+  .uuid as $id | .name as $name |
+  ($u | map(select(.added_by_uuid == $id))) as $mu |
+  "\($name): \($mu | length) Users (\($mu | map(select(.enable == true)) | length) Enabled)"
 ')
-IFS=$'\t' read -r AC3 TU3 AU3 _ <<< "$_JQ3"
-assert_eq "null users: total" "$TU3" "0"
-assert_eq "null users: active" "$AU3" "0"
+assert_eq "null users: admin line" "$ADMIN_INFO_NULL" "Solo: 0 Users (0 Enabled)"
 
 # Empty admin array
 EMPTY_ADMINS='{"admin_users":[],"users":[]}'
-_JQ4=$(echo "$EMPTY_ADMINS" | jq -r '
-  (.users // []) as $u | (.admin_users // []) as $a |
-  [$a|length|tostring] | @tsv
-')
-assert_eq "empty admins" "$_JQ4" "0"
+ADMIN_INFO_EMPTY_ADMINS=$(echo "$EMPTY_ADMINS" | jq -r '
+  (.users // []) as $u |
+  (.admin_users // [])[] |
+  .uuid as $id | .name as $name |
+  ($u | map(select(.added_by_uuid == $id))) as $mu |
+  "\($name): \($mu | length) Users (\($mu | map(select(.enable == true)) | length) Enabled)"
+' 2>/dev/null || true)
+[[ -z "$ADMIN_INFO_EMPTY_ADMINS" ]] && ADMIN_INFO_EMPTY_ADMINS="Owner: ? Users (?)"
+assert_eq "empty admins: fallback" "$ADMIN_INFO_EMPTY_ADMINS" "Owner: ? Users (?)"
 
 # ── 3. Deduplication logic ────────────────────────────────────────────────
 
@@ -124,7 +108,7 @@ assert_eq "same file → skip (exit 0)" "$IS_DUP" "0"
 # Different file → should send
 LATEST2="/opt/hiddify/backup/backup_2025.json"
 [[ "$LATEST2" == "$LAST" ]] && IS_DUP2=0 || IS_DUP2=1
-assert_eq "new file → send (exit 1)" "$IS_DUP2" "1"
+assert_eq "new file → send" "$IS_DUP2" "1"
 
 # No .last_sent file → should always send
 rm -f "$LAST_SENT_FILE"
@@ -138,17 +122,16 @@ rm -rf "$TMP_D"
 
 section "Error exits"
 
-# Missing config → exit 1
 TMP_E=$(mktemp -d)
+# Missing config → exit 1
+CONFIG_FILE="$TMP_E/.env"
 (
     set -e
-    CONFIG_FILE="$TMP_E/.env"
-    LAST_SENT_FILE="$TMP_E/.last_sent"
     if [[ ! -f "$CONFIG_FILE" ]]; then
         exit 1
     fi
-)
-assert_eq "missing config → exit 1" "$?" "1"
+) || EXIT_MISSING_CONFIG=$?
+assert_eq "missing config → exit 1" "${EXIT_MISSING_CONFIG:-0}" "1"
 
 # Empty backup dir → exit 1
 EMPTY_BKDIR="$TMP_E/empty_bkup"
@@ -210,4 +193,3 @@ echo "════════════════════════�
 echo ""
 
 [[ $FAIL -eq 0 ]]
-
