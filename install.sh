@@ -13,7 +13,7 @@ SYMLINK="/usr/local/bin/hiddify-backup"
 print_banner() {
     echo ""
     echo "╔═══════════════════════════════════════════════════════════╗"
-    echo "║               HiddifyAutoBackup Setup 1.2.0               ║"
+    echo "║               HiddifyAutoBackup Setup 1.1.0               ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo ""
 }
