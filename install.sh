@@ -13,7 +13,7 @@ SYMLINK="/usr/local/bin/hiddify-backup"
 print_banner() {
     echo ""
     echo "╔═══════════════════════════════════════════════════════════╗"
-    echo "║               HiddifyAutoBackup Setup 1.1.0               ║"
+    echo "║               HiddifyAutoBackup Setup 1.1.1               ║"
     echo "╚═══════════════════════════════════════════════════════════╝"
     echo ""
 }
@@ -364,19 +364,27 @@ echo "    4) Every 15 minutes"
 echo "    5) Every 20 minutes"
 echo "    6) Every 30 minutes"
 echo "    7) Every 60 minutes  (recommended)"
+echo "    8) Every day         (03:30)"
+echo "    9) Every week        (Monday 03:30)"
+echo "   10) Every 2 weeks     (1st and 15th at 03:30)"
+echo "   11) Every month       (1st of the month at 03:30)"
 echo ""
 
 while true; do
-    read -rp "  Choose [1-7]: " CHOICE
+    read -rp "  Choose [1-11]: " CHOICE
     case "$CHOICE" in
-        1) INTERVAL="* * * * *";    LABEL="every 1 minute";   break ;;
-        2) INTERVAL="*/2 * * * *";  LABEL="every 2 minutes";  break ;;
-        3) INTERVAL="*/5 * * * *";  LABEL="every 5 minutes";  break ;;
-        4) INTERVAL="*/15 * * * *"; LABEL="every 15 minutes"; break ;;
-        5) INTERVAL="*/20 * * * *"; LABEL="every 20 minutes"; break ;;
-        6) INTERVAL="*/30 * * * *"; LABEL="every 30 minutes"; break ;;
-        7) INTERVAL="0 * * * *";    LABEL="every 60 minutes"; break ;;
-        *) echo "  ❌ Please enter a number between 1 and 7." ;;
+        1)  INTERVAL="* * * * *";    LABEL="every 1 minute";   break ;;
+        2)  INTERVAL="*/2 * * * *";  LABEL="every 2 minutes";  break ;;
+        3)  INTERVAL="*/5 * * * *";  LABEL="every 5 minutes";  break ;;
+        4)  INTERVAL="*/15 * * * *"; LABEL="every 15 minutes"; break ;;
+        5)  INTERVAL="*/20 * * * *"; LABEL="every 20 minutes"; break ;;
+        6)  INTERVAL="*/30 * * * *"; LABEL="every 30 minutes"; break ;;
+        7)  INTERVAL="0 * * * *";    LABEL="every 60 minutes"; break ;;
+        8)  INTERVAL="30 3 * * *";   LABEL="every day at 03:30"; break ;;
+        9)  INTERVAL="30 3 * * 1";   LABEL="every Monday at 03:30"; break ;;
+        10) INTERVAL="30 3 1,15 * *"; LABEL="every 2 weeks (1st and 15th at 03:30)"; break ;;
+        11) INTERVAL="30 3 1 * *";   LABEL="every month on the 1st at 03:30"; break ;;
+        *) echo "  ❌ Please enter a number between 1 and 11." ;;
     esac
 done
 echo "  ✅ Schedule: $LABEL"
