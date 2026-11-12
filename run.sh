@@ -5,10 +5,15 @@ set -euo pipefail
 #  Configurable paths (can be overridden for testing)
 # ─────────────────────────────────────────────
 BACKUP_DIR="${BACKUP_DIR:-/opt/HiddifyAutoBackup}"
-HIDDIFY_BACKUP_DIR="${HIDDIFY_BACKUP_DIR:-/opt/hiddify-manager/hiddify-panel/backup}"
-HIDDIFY_BACKUP_SCRIPT="${HIDDIFY_BACKUP_SCRIPT:-/opt/hiddify-manager/hiddify-panel/backup.sh}"
 CONFIG_FILE="$BACKUP_DIR/.env"
 LAST_SENT_FILE="$BACKUP_DIR/.last_sent"
+
+# v12 and earlier keep the panel tree under hiddify-panel/.
+# v13 moved the script to services/panel/ and backup files to data/backup/.
+LEGACY_BACKUP_SCRIPT="/opt/hiddify-manager/hiddify-panel/backup.sh"
+LEGACY_BACKUP_DIR="/opt/hiddify-manager/hiddify-panel/backup"
+V13_BACKUP_SCRIPT="/opt/hiddify-manager/services/panel/backup.sh"
+V13_BACKUP_DIR="/opt/hiddify-manager/data/backup"
 
 # ─────────────────────────────────────────────
 #  Check config file
@@ -23,13 +28,72 @@ fi
 source "$CONFIG_FILE"
 
 # ─────────────────────────────────────────────
-#  Run Hiddify backup script
+#  Resolve Hiddify layout (v12 and v13)
+#  An explicit HIDDIFY_BACKUP_SCRIPT / HIDDIFY_BACKUP_DIR wins.
+#  Otherwise try the script that exists. If that file cannot be executed
+#  (missing binary, permission), fall through to the other layout.
+#  A real backup failure (non-zero from a script that did run) stops here.
 # ─────────────────────────────────────────────
-echo "[*] Triggering Hiddify backup..."
-if ! "$HIDDIFY_BACKUP_SCRIPT" > /dev/null 2>&1; then
-    echo "❌ Hiddify backup script failed: $HIDDIFY_BACKUP_SCRIPT"
+run_hiddify_backup() {
+    local -a scripts=()
+    local -a dirs=()
+
+    if [[ -n "${HIDDIFY_BACKUP_SCRIPT:-}" ]]; then
+        scripts+=("$HIDDIFY_BACKUP_SCRIPT")
+        if [[ -n "${HIDDIFY_BACKUP_DIR:-}" ]]; then
+            dirs+=("$HIDDIFY_BACKUP_DIR")
+        elif [[ "$HIDDIFY_BACKUP_SCRIPT" == "$V13_BACKUP_SCRIPT" ]]; then
+            dirs+=("$V13_BACKUP_DIR")
+        else
+            dirs+=("$LEGACY_BACKUP_DIR")
+        fi
+    else
+        if [[ -f "$V13_BACKUP_SCRIPT" ]]; then
+            scripts+=("$V13_BACKUP_SCRIPT")
+            dirs+=("${HIDDIFY_BACKUP_DIR:-$V13_BACKUP_DIR}")
+        fi
+        if [[ -f "$LEGACY_BACKUP_SCRIPT" ]]; then
+            scripts+=("$LEGACY_BACKUP_SCRIPT")
+            dirs+=("${HIDDIFY_BACKUP_DIR:-$LEGACY_BACKUP_DIR}")
+        fi
+    fi
+
+    if [[ ${#scripts[@]} -eq 0 ]]; then
+        echo "❌ Hiddify backup script not found."
+        echo "   Tried: $V13_BACKUP_SCRIPT"
+        echo "   Tried: $LEGACY_BACKUP_SCRIPT"
+        exit 1
+    fi
+
+    local i script dir rc
+    for i in "${!scripts[@]}"; do
+        script="${scripts[$i]}"
+        dir="${dirs[$i]}"
+        echo "[*] Triggering Hiddify backup: $script"
+        set +e
+        "$script" > /dev/null 2>&1
+        rc=$?
+        set -e
+        if [[ "$rc" -eq 0 ]]; then
+            HIDDIFY_BACKUP_SCRIPT="$script"
+            HIDDIFY_BACKUP_DIR="$dir"
+            return 0
+        fi
+        # 126: found but not executable. 127: command not found.
+        # Those mean this layout is not usable; try the next one.
+        if [[ "$rc" -eq 126 || "$rc" -eq 127 ]]; then
+            echo "  ⚠️  Could not execute $script (exit $rc). Trying the other layout..."
+            continue
+        fi
+        echo "❌ Hiddify backup script failed (exit $rc): $script"
+        exit 1
+    done
+
+    echo "❌ Hiddify backup script failed."
     exit 1
-fi
+}
+
+run_hiddify_backup
 
 # ─────────────────────────────────────────────
 #  Find latest backup file
